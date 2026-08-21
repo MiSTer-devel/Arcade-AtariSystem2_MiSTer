@@ -1,0 +1,86 @@
+# Source list for the Atari System 2 core.
+#
+# Add files HERE, by hand -- not through the Quartus IDE, which writes them into
+# the .qsf instead and lets the two lists drift apart.
+#
+# SEARCH_PATH is what makes the `include "rtl/rom/sys2_rom_layout.vh"` form resolve
+# from the project directory. The layout header is an include, not a compiled
+# source, so it is deliberately not listed as a *_FILE: Quartus 17.0 has no
+# SYSTEMVERILOG_INCLUDE_FILE assignment and rejects the whole project file if you
+# invent one.
+set_global_assignment -name SEARCH_PATH .
+
+# ---- top level ---------------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE atarisys2.sv
+set_global_assignment -name SDC_FILE           atarisys2.sdc
+
+# ---- clocking ----------------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/clocks/sys2_clocks.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/clocks/sys2_pulse_cdc.sv
+
+# ---- CPUs --------------------------------------------------------------------
+# Main CPU: DEC T-11. Sound CPU: T65 (VHDL, analysed in package-dependency order).
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/t11/t11_core.sv
+set_global_assignment -name VHDL_FILE          rtl/lib/T65/T65_Pack.vhd
+set_global_assignment -name VHDL_FILE          rtl/lib/T65/T65_MCode.vhd
+set_global_assignment -name VHDL_FILE          rtl/lib/T65/T65_ALU.vhd
+set_global_assignment -name VHDL_FILE          rtl/lib/T65/T65.vhd
+
+# ---- main board --------------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/sys2_main_bus.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/sys2_analog_map.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/sys2_analog_axis.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/slapstic/sys2_slapstic.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/adc/adc0809.sv
+
+# ---- memories ----------------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_dpram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_sdram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_sdram_arb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_sdram_loader_writer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_sprite_byte_fifo.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/sys2_cpu_icache.sv
+
+# ---- ROM load path -----------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rom/sys2_rom_loader.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rom/sys2_maincpu_rom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rom/sys2_audio_rom_bram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rom/sys2_char_rom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rom/sys2_sprite_rom_arb.sv
+
+# ---- video -------------------------------------------------------------------
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sys2_video_timing.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_palette.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_priority.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_pen4.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_pf_linebuf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_decode.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_vscan.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_pen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_linebuf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_walker.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_mob_engine.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_video_render.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_analog_hpos.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/sys2_analog_sync_shift.sv
+
+# ---- sound -------------------------------------------------------------------
+# YM2151 (jotego jt51, Verilog -- its own qip lists the synthesizable files),
+# POKEY (MikeJ / FPGAArcade) and TMS5220 speech (d18c7db) are VHDL; Quartus
+# compiles the mixed-language set directly.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_sound_bus.sv
+set_global_assignment -name QIP_FILE           rtl/lib/jt51/hdl/jt51.qip
+set_global_assignment -name VHDL_FILE          rtl/lib/POKEY.vhd
+set_global_assignment -name VHDL_FILE          rtl/lib/TMS5220.vhd
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_leta.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_quad_gen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_analog_spin.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_center_disc.sv
+
+# Analog output network (SP-275 sheets 9A/9B): a single-pole RC primitive, the
+# per-chip filter chain built from it, the summing/output stage, and the whole
+# chain wrapped as one module so a coefficient cannot drift between its users.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_pole.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_chanfilt.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_rcmix.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_audio_mix.sv
