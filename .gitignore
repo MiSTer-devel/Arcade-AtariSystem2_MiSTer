@@ -1,0 +1,49 @@
+# Quartus build output -- all of it regenerable
+db
+incremental_db
+output_files
+greybox_tmp
+hc_output
+simulation
+hps_isw_handoff
+.qsys_edit
+sys/.qsys_edit
+sys/vip
+*_sim
+PLLJ_PLLSPE_INFO.txt
+
+# generated at compile time by sys/build_id.tcl
+build_id.v
+c5_pin_model_dump.txt
+
+# Quartus scratch and reports
+*.qws
+*.qdf
+*.rpt
+*.smsg
+*.summary
+*.done
+*.jdi
+*.pin
+*.sof
+*.ppf
+*.ddb
+*.sopcinfo
+*.cmp
+*.sip
+*.spd
+*.bsf
+*.csv
+*.xml
+*_netlist
+
+# programmer configuration -- machine specific
+*.cdf
+*.stp
+
+# editor and OS noise
+*.bak
+*.orig
+*.rej
+*~
+.DS_Store

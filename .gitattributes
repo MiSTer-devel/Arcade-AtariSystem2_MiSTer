@@ -1,0 +1,3 @@
+# Store and check out every file byte-exact. The vendored trees (sys/, rtl/lib/)
+# are verbatim upstream copies and must not be line-ending translated.
+* -text
