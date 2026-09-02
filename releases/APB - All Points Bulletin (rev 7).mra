@@ -5,7 +5,7 @@
 	<mratimestamp>20260803000000</mratimestamp>
 	<year>1987</year>
 	<manufacturer>Atari Games</manufacturer>
-	<rotation>vertical</rotation>
+	<rotation>vertical (ccw)</rotation>
 	<category>Arcade</category>
 	<rbf>atarisys2</rbf>
 	<mameinfo parent="apb" cpp="atarisy2" input="apb"/>
