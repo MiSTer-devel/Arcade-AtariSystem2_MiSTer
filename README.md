@@ -205,10 +205,10 @@ link twice per frame, which no single-snapshot comparison can represent. The cor
 was developed simulation-first, with AI assistance, under human review and
 hardware validation on real MiSTer hardware.
 
-Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,514 / 41,910 ALMs
-(42 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,108
+Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,557 / 41,910 ALMs
+(42 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,079
 registers. Timing closes with **TNS 0.000 on all 36 clock domains**: worst setup
-+0.654 ns and worst hold +0.244 ns, both on PLL output counters.
++0.288 ns and worst hold +0.244 ns, both on PLL output counters.
 
 ### Known issues
 
@@ -260,7 +260,7 @@ releases/                            Dated RBF + MRA files
 ```
 
 `sys/` is a verbatim copy of [Template_MiSTer](https://github.com/MiSTer-devel/Template_MiSTer)
-at commit `df59d67`, byte-identical, with no core-specific edits. The `emu` port
+at commit `3ea1134`, byte-identical, with no core-specific edits. The `emu` port
 list comes from the framework's own `sys/emu_ports.vh` rather than being copied
 into `atarisys2.sv`, so a framework update cannot leave the two out of step.
 
