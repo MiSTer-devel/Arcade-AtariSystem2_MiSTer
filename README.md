@@ -182,7 +182,9 @@ Lives/Bonus Life pair MAME inherits from Paperboy.
   polynomial generators corrected — poly5 was cross-coupled to poly4, and poly9
   and poly17 were replaced against the real chip's shift-register topology. The
   TMS5220 speech core's lattice registers were widened to match its ±16383
-  datapath, which is what produced a level-select "pop".
+  datapath, which is what produced a level-select "pop". The YM2151 output passes
+  through the YM3012 DAC's 10-bit-mantissa floating-point format, as on the board,
+  rather than reaching the mix as linear 16-bit PCM.
 
 - **Motion objects follow the silicon, not MAME.** 40 link slots, no repeat
   detection, and the low 3 tile-code bits wrap without carrying into the upper
@@ -205,10 +207,10 @@ link twice per frame, which no single-snapshot comparison can represent. The cor
 was developed simulation-first, with AI assistance, under human review and
 hardware validation on real MiSTer hardware.
 
-Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,557 / 41,910 ALMs
-(42 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,079
+Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,697 / 41,910 ALMs
+(42 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,118
 registers. Timing closes with **TNS 0.000 on all 36 clock domains**: worst setup
-+0.288 ns and worst hold +0.244 ns, both on PLL output counters.
++0.596 ns and worst hold +0.243 ns, both on PLL output counters.
 
 ### Known issues
 

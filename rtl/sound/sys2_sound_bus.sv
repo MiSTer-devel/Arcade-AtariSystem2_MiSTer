@@ -465,10 +465,17 @@ jt51 u_jt51 (
 	.ct2    (),
 	.irq_n  (),                 // Paperboy's 6502 IRQ is the 244 Hz divider, not the YM timer
 	.sample (),
-	.left   (),
-	.right  (),
-	.xleft  (ym_left),
-	.xright (ym_right)
+	// `left`/`right`, NOT `xleft`/`xright`. The YM2151 does not output linear PCM: it sends each
+	// sample to the YM3012 DAC as a 10-bit mantissa + 3-bit exponent, so the board only ever
+	// reproduces that rounded value (up to 6 low bits lost on loud samples). jt51's `left` is
+	// `xleft` round-tripped through that format (jt51_lin2exp -> jt51_exp2lin), bit-identical over
+	// all 65536 inputs to MAME ymfm's `roundtrip_fp()` ("YM2151 uses an external DAC (YM3012)").
+	// Corroborated by Yamaha's YM3012 datasheet (block diagram: a 10-bit DAC + 3->7 exponent
+	// decoder) and by logic-analyzer captures of the SO pin. `xleft` is the pre-DAC accumulator.
+	.left   (ym_left),
+	.right  (ym_right),
+	.xleft  (),
+	.xright ()
 );
 
 // --- POKEY 1 (left) and POKEY 2 (right). Held in write mode while a write is
