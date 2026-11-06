@@ -124,8 +124,9 @@ neither applies.
 | Low | ~274 | 1.9 |
 | Lowest | ~137 | 0.95 |
 
-One setting covers every game in the core — MiSTer keeps one configuration file
-per core rather than per ROM set.
+Each game keeps its own settings. MiSTer stores them in a separate file per game,
+so set the sensitivity in each game you play and choose **Save settings** in the
+OSD to keep it.
 
 Super Sprint's own self-test asks for three sets of controls and will report
 faults for players 2 and 3 if only one controller is connected. That is the game
@@ -186,6 +187,11 @@ Lives/Bonus Life pair MAME inherits from Paperboy.
   through the YM3012 DAC's 10-bit-mantissa floating-point format, as on the board,
   rather than reaching the mix as linear 16-bit PCM.
 
+- **LETA steering counter.** Modelled on a replacement built by bench-testing a
+  real 137304-2002: each input must hold for three samples of the chip's 156 kHz
+  clock before it is accepted, and the counter runs at the 2x resolution (both
+  edges of one channel) that every game selects through `0x187C` bit 4.
+
 - **Motion objects follow the silicon, not MAME.** 40 link slots, no repeat
   detection, and the low 3 tile-code bits wrap without carrying into the upper
   bits. MAME differs on all three, and following MAME instead breaks Championship
@@ -207,10 +213,10 @@ link twice per frame, which no single-snapshot comparison can represent. The cor
 was developed simulation-first, with AI assistance, under human review and
 hardware validation on real MiSTer hardware.
 
-Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,697 / 41,910 ALMs
-(42 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,118
+Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,878 / 41,910 ALMs
+(43 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,106
 registers. Timing closes with **TNS 0.000 on all 36 clock domains**: worst setup
-+0.596 ns and worst hold +0.243 ns, both on PLL output counters.
++0.548 ns and worst hold +0.160 ns, both on PLL output counters.
 
 ### Known issues
 

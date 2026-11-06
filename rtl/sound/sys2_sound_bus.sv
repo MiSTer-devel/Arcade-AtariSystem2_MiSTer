@@ -544,7 +544,7 @@ always_ff @(posedge clk) begin
 		tms_dbus     <= 8'h00;
 		tms_wsn      <= 1'b1;
 		tms_clk_hi   <= 1'b0;
-		leta_resolution <= 1'b1;   // 2x is the mode 720 needs; see sys2_leta
+		leta_resolution <= 1'b0;   // TBRES: LS175 5F cleared by P2RESET -> RESOLN=0 = 2x; see sys2_leta
 		tms_ctl_runn <= 1'b0;   // reset-asserted at power-on; the 6502 releases it (0x187e bit0=1) at boot
 		coin_counter <= 2'b00;  // LS74 7H cleared by P2RESET
 		lamp         <= 2'b00;  // LS175 5F cleared by P2RESET
@@ -553,8 +553,8 @@ always_ff @(posedge clk) begin
 		if (cpu_we && sel_tms_ws0) tms_wsn      <= 1'b1;
 		if (cpu_we && sel_tms_ws1) tms_wsn      <= 1'b0;
 		if (cpu_we && sel_switch)  tms_clk_hi   <= cpu_do[5];
-		// 0x187C bit 4 = "LETA Resolution" (SP-290 Sheet 4B names it; the sheet does
-		// not show what it changes and MAME does not model it -- see sys2_leta).
+		// 0x187C bit 4 = "LETA Resolution": net TBRES into the LETA's RESOLN pin 14
+		// (0 = 2x, 1 = 4x). Every game writes 0. See sys2_leta.
 		if (cpu_we && sel_switch)  leta_resolution <= cpu_do[4];
 		if (cpu_we && sel_sndrst)  tms_ctl_runn <= cpu_do[0];
 		if (cpu_we && sel_coin)    coin_counter <= cpu_do[1:0];

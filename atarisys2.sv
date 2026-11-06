@@ -100,9 +100,10 @@ wire [11:0] ary = (ar == 2'd0) ? (ar_rotated ? 12'd4 : 12'd3) : 12'd0;
 // Wrenches/Obstacles do, so the OSD was setting the right bits under the wrong names.
 // Each game therefore gets its own group, gated by status_menumask via the `h<n>` prefix
 // (shown only when the mask bit is SET). Groups use SEPARATE status bits rather than reusing
-// Paperboy's: all five games share one .rbf, so MiSTer keeps ONE config file for them, and
-// overlapping the bits would let a setting made in one game reappear as a different setting
-// in the next. Paperboy's own bits are untouched.
+// Paperboy's. That is not forced by the config file: Main_MiSTer names the .CFG after each
+// MRA's <setname>, so every game already keeps its own settings even on one .rbf. Separate
+// bits keep each game's options independent of that detail and keep the G-CONFSTR collision
+// check meaningful. Paperboy's own bits are untouched.
 //
 // Option lists are in DIP-value order (index 0 = switch value 0), because the status
 // field is fed straight into the switch bits. Reordering a list silently changes what the
@@ -1483,10 +1484,10 @@ wire [1:0] o_coins_cred  = status[28:27];  // 0:1C/1C 1:2C/1C 2:3C/1C 3:4C/1C  (
 // MiSTer powers `status` up at 0, so the factory value has to BE index 0. Paperboy therefore
 // gets its OWN status bits with the option list permuted by the same XOR applied here, which
 // keeps the shipped "menu index == DSW switch value" property intact for the other four
-// rather than special-casing their encoding. Separate bits are mandatory, not tidiness: all
-// five games share one .rbf and therefore ONE MiSTer config file, so shared bits would make a
-// coinage chosen in Paperboy reappear as a different coinage in Super Sprint -- the same shape
-// as the old bug that put Super Sprint's Wrenches under the name "Lives".
+// rather than special-casing their encoding. Separate bits are a safeguard, not a necessity:
+// Main_MiSTer names the .CFG after each MRA's <setname>, so Paperboy's saved coinage lives in
+// a different file from Super Sprint's anyway. Not sharing bits keeps that true even if a
+// future framework changed how config files are named.
 wire       is_paperboy      = (game_id == SYS2_GAME_PAPERBOY);
 wire [1:0] o_coins_cred_pb  = status[97:96] ^ 2'b01;   // index 0 -> DSW value 1 = 2C/1C
 wire [1:0] coins_cred_eff   = is_paperboy ? o_coins_cred_pb : o_coins_cred;
@@ -1509,7 +1510,7 @@ wire [7:0] dip_coin = { o_free_play ? 3'b111 : 3'b000, // sw1-3 Bonus Adder: On 
 // from MAME. Only the field WIDTHS coincide, which is exactly why the Paperboy-shaped pack
 // this replaced looked right: on Super Sprint it was setting Wrenches under the name "Lives".
 // Each game reads its own status bits, so switching games cannot reinterpret the previous
-// game's settings (all five share one .rbf and therefore one MiSTer config file).
+// game's settings (MiSTer also keeps a separate .CFG per MRA <setname>).
 wire [1:0] o720_bonus    = status[65:64];
 wire [1:0] o720_diff     = status[67:66];
 wire [1:0] o720_maxadd   = status[69:68];

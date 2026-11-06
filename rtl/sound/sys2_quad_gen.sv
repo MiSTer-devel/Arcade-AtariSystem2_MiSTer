@@ -22,21 +22,35 @@
 // ---------------------------------------------------------------------------
 // Phase arithmetic
 //
-// The Gray sequence is 00 -> 01 -> 11 -> 10 -> 00 (X = bit0, Y = bit1) for "forward".
-// X transitions twice per full cycle -- rising at phase 1->2 and falling at 3->0 -- so in
-// the LETA's 2x mode one count is two phase steps. A requested movement of N counts is
-// therefore 2N phase steps, which is why `phase_target` is the spinner accumulator
-// shifted left by one.
+// "Forward" (a positive request) is the (X,Y) Gray sequence 00 -> 10 -> 11 -> 01 -> 00:
+// X LEADS. That is the order the real LETA counts UP -- X is the chip's CLK and Y its DIR,
+// and a DIR edge counts up iff the new Y equals X (see sys2_leta). Y transitions twice per
+// full cycle, so in the LETA's 2x mode -- the mode every game selects -- one count is two
+// phase steps. A requested movement of N counts is therefore 2N phase steps, which is why
+// `phase_target` is the spinner accumulator shifted left by one.
 //
-// In 1x mode the chip counts only X's rising edge, so the same 2N phase steps yield
-// N/2 counts -- half as many. That asymmetry is the chip's, not this generator's: the encoder
-// disc does not change when the resolution bit does. Do NOT "compensate" for it here.
+// In 4x mode (RESOLN=1, which no game is known to write) the same 2N phase steps yield
+// 2N counts -- twice as many. That is the chip's, not this generator's: the encoder disc
+// does not change when the resolution bit does. Do NOT "compensate" for it here.
+//
+// The opposite convention, 00 -> 01 -> 11 -> 10 (Y leading), would match a
+// sys2_leta that counted X edges with the opposite sign. The net spinner -> count mapping,
+// and so every game's steering direction, is the same either way. Change the Gray order
+// here without changing sys2_leta's direction rule and every game steers backwards.
+//
+// HOLD: the chip only accepts an input after 3 identical phi2 samples, so a state held for
+// one sample would never be seen at all. Each state is held
+// for HOLD_TICKS ce_step ticks; at the phi2 rate and the default 4 that is ~39 k phase steps
+// a second, ~20 k counts a second at 2x -- about 35x the fastest the stick path asks for.
 // ---------------------------------------------------------------------------
 module sys2_quad_gen #(
-	// Phase steps emitted per `ce_step` tick. 1 is the safe default: the caller drives
-	// ce_step at the LETA's own 156.25 kHz phi2 rate, so every emitted edge is guaranteed
-	// to be sampled. Raising this trades fidelity for catch-up speed and WILL lose counts.
-	parameter int STEP_PER_TICK = 1
+	// Phase steps emitted per step. 1 is the safe default: every emitted state is held long
+	// enough for the LETA's filter to see it. Raising this trades fidelity for catch-up speed
+	// and WILL lose counts.
+	parameter int STEP_PER_TICK = 1,
+	// ce_step ticks each state is held. The LETA needs >= 3 (its input filter); 4 leaves one
+	// sample of margin. 1 emits single-sample states, which the LETA never sees.
+	parameter int HOLD_TICKS = 4
 ) (
 	input  logic        clk,
 	input  logic        reset,
@@ -63,18 +77,24 @@ logic        spin_tog_d;
 logic signed [15:0] phase_target;   // in phase steps
 logic signed [15:0] phase_now;
 
-// Gray encode. The pairs below are written (X,Y) in the SAME order as sys2_leta's
-// header and its bench: 00 -> 01 -> 11 -> 10 is forward, i.e. Y leads on the first
-// step. Writing them (Y,X) instead swaps X and Y and inverts the counted direction --
-// which is exactly the failure a round-trip check catches.
+// Gray encode. The pairs below are written (X,Y): 00 -> 10 -> 11 -> 01 is forward, i.e. X
+// leads on the first step. Writing them (Y,X) instead swaps X and Y and inverts the
+// counted direction -- which is exactly the failure a round-trip check catches.
 always_comb begin
 	case (phase_now[1:0])
 		2'd0: begin quad_x = 1'b0; quad_y = 1'b0; end
-		2'd1: begin quad_x = 1'b0; quad_y = 1'b1; end
+		2'd1: begin quad_x = 1'b1; quad_y = 1'b0; end
 		2'd2: begin quad_x = 1'b1; quad_y = 1'b1; end
-		default: begin quad_x = 1'b1; quad_y = 1'b0; end
+		default: begin quad_x = 1'b0; quad_y = 1'b1; end
 	endcase
 end
+
+// Hold divider: `step_ok` is true on one ce_step tick in HOLD_TICKS (1..8). A fixed 3-bit
+// counter and a LITERAL-width cast, not a parameter-width one: Quartus 17.0 rejects casts
+// it cannot size at parse time, and no lint or simulation sees that (see the note below).
+localparam logic [2:0] HOLD_LAST = 3'(HOLD_TICKS - 1);
+logic [2:0] hold_cnt;
+wire step_ok = ce_step && (hold_cnt == HOLD_LAST);
 
 wire        spin_new   = (spinner[8] != spin_tog_d);
 wire signed [8:0] spin_delta = {spinner[7], spinner[7:0]};   // sign-extend to 9 bits
@@ -111,7 +131,9 @@ always_ff @(posedge clk) begin
 		spin_tog_d   <= spinner[8];
 		phase_target <= '0;
 		phase_now    <= '0;
+		hold_cnt     <= 3'd0;
 	end else begin
+		if (ce_step) hold_cnt <= (hold_cnt == HOLD_LAST) ? 3'd0 : hold_cnt + 3'd1;
 		// Accumulate both request sources in ONE expression. Writing them as two separate
 		// `if`s in the same always block would silently drop the spinner on any cycle where
 		// both fired, because the later assignment wins.
@@ -120,7 +142,7 @@ always_ff @(posedge clk) begin
 
 		// Walk toward the target, never past it: with STEP_PER_TICK > 1 an unclamped step
 		// oscillates around the target forever and emits edges that were never requested.
-		if (ce_step) begin
+		if (step_ok) begin
 			if (remaining > 0) phase_now <= phase_now +
 				((remaining >= STEP_POS) ? STEP_POS : remaining);
 			else if (remaining < 0) phase_now <= phase_now +
