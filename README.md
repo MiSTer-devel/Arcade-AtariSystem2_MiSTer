@@ -31,16 +31,19 @@ Spanish releases — ship under `releases/_alternatives/`.
 
 ## Installing
 
-1. Copy `releases/atarisys2_<date>.rbf` to `/media/fat/_Arcade/cores/`.
+1. Copy `releases/Arcade-atarisys2_<date>.rbf` to `/media/fat/_Arcade/cores/`.
 2. Copy the `.mra` files you want from `releases/` to `/media/fat/_Arcade/`, and
    any alternates from `releases/_alternatives/<Game>/` to
    `/media/fat/_Arcade/_alternatives/<Game>/`.
 3. Put the matching MAME ROM sets in `/media/fat/games/mame/`.
 
-**Keep only one `atarisys2*` file in `_Arcade/cores/`.** An MRA's
-`<rbf>atarisys2</rbf>` resolves by prefix, so an older dated release left in that
-folder is an equally valid match and may load instead of the one you just copied.
-Quote the filename you are running in any bug report.
+**Keep only one `atarisys2` core in `_Arcade/cores/`.** An MRA's
+`<rbf>atarisys2</rbf>` matches both `atarisys2_<date>.rbf` (the name the MiSTer
+downloader installs) and `Arcade-atarisys2_<date>.rbf` (the name in `releases/`),
+and when several match MiSTer loads the one that sorts last. A lowercase
+`atarisys2_*` sorts after every `Arcade-atarisys2_*`, so an old downloader-installed
+core beats a newer one copied by hand. Delete the others before copying a new one,
+and quote the filename you are running in any bug report.
 
 **Upgrading from a core named `Arcade-Paperboy`?** Delete every
 `Arcade-Paperboy*` file from `_Arcade/cores/`, and replace the old MRAs with the
@@ -232,11 +235,11 @@ registers. Timing closes with **TNS 0.000 on all 36 clock domains**: worst setup
 
 Quartus Prime **17.0.2** (Lite or Standard), as required for MiSTer cores.
 
-1. Open `atarisys2.qpf`.
-2. Compile. The output is `output_files/atarisys2.rbf`.
-3. For a release, copy it to `releases/atarisys2_YYYYMMDD.rbf`.
+1. Open `Arcade-atarisys2.qpf`.
+2. Compile. The output is `output_files/Arcade-atarisys2.rbf`.
+3. For a release, copy it to `releases/Arcade-atarisys2_YYYYMMDD.rbf`.
 
-From a shell: `quartus_sh --flow compile atarisys2`.
+From a shell: `quartus_sh --flow compile Arcade-atarisys2`.
 
 Sources are listed in `files.qip` — add files there by hand, not through the
 Quartus IDE, which writes them into the `.qsf` instead and lets the two lists
@@ -246,7 +249,7 @@ after `source files.qip` except the `PARTITION_HIERARCHY` line.
 
 The tightest setup path in this design is not in the core, it is in the MiSTer
 framework's HDMI pipeline at the 148.5 MHz 1080p60 pixel clock, and placement
-decides whether it closes — which is why `atarisys2.qsf` pins a fitter seed.
+decides whether it closes — which is why `Arcade-atarisys2.qsf` pins a fitter seed.
 Check the TNS column after compiling: Quartus reports "Full Compilation was
 successful, 0 errors" and writes an RBF even when timing has not met.
 
@@ -255,7 +258,8 @@ successful, 0 errors" and writes an RBF even when timing has not met.
 ## Repository layout
 
 ```text
-atarisys2.qpf / .qsf / .sdc / .srf   Quartus project
+Arcade-atarisys2.qpf / .qsf / .srf  Quartus project
+atarisys2.sdc                        Timing constraints
 atarisys2.sv                         Glue between the MiSTer framework and the core
 files.qip                            Source file list
 rtl/                                 The core
