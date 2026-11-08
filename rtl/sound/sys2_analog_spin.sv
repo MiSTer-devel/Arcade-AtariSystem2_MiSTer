@@ -3,7 +3,7 @@
 
 `timescale 1ns/1ps
 
-// Analog stick -> encoder-count deltas, for the four LETA games' steering.
+// Analog stick -> encoder-count deltas, for the three LETA wheel games' steering.
 //
 // Why this exists
 // ---------------
@@ -38,10 +38,9 @@
 // `SELECT: Controller Type` choice between `FAKE_SPINNER: Dial` and `FAKE_JOY_X/Y: AD
 // Stick X/Y`, and for the stick it converts the stick's ANGLE into disc movement --
 // `m_joy_last_angle` in atarisy2.h, which MAME initialises to 90.0 as of commit 6effbd5.
-// Angle mode is nicer for 720 specifically, because the skater then faces
-// where the stick points, but it needs an atan2 this core has no reason to carry yet.
-// Rate mode is used for all four games here; angle mode for 720 is a future refinement,
-// and MAME's 90-degree initial value is the reference if it is ever built.
+// 720 uses angle mode instead (sys2_stick_angle): the rate mapping made its Control Test
+// spin instead of follow the stick. This module
+// now steers only the three wheel games.
 // MAME offers NO stick mapping at all for the three wheel games (they are pure `Dial`), so
 // there is no reference to diverge from there.
 //

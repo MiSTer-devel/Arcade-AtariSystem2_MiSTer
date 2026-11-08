@@ -410,6 +410,36 @@ begin
 		end if;
 	end process;
 
+	-- The four status/serial read registers below are constants: on System 2 nothing can ever
+	-- load them. Left undriven, IRQST would read 0, and because its bits are active-low that
+	-- reads as every interrupt permanently pending. The values follow from how System 2 wires
+	-- the chip and from the Altirra Hardware Reference Manual's register descriptions (derived;
+	-- they have not been read back from a real board):
+	--
+	--   * K0-K5, KR1, KR2, BCLK, OCLK and IRQ are unconnected on both POKEYs (SP-275 9B,
+	--     SP-294 8B). POKEY 1's SID is pulled high to an unused header (J16); POKEY 2's is open.
+	--     No serial byte, key code or keyboard scan can ever arrive.
+	--   * IRQST = $F7: an interrupt bit reads 1 when no event has latched it. Bit 3 (serial
+	--     output complete) is unlatched and reads 0 while the output is idle. Timer underflow
+	--     and serial-out-needed events are NOT modelled: the IRQ pin goes nowhere, and no game
+	--     enables them outside the serial loader below.
+	--   * SKSTAT = $FF: bits 7:5 and 1 read 1 with no serial traffic, bit 2 reads 1 with the
+	--     keyboard scan off, bit 4 is the raw SID pin (high on POKEY 1). Bit 3 follows the
+	--     floating KR2 and is undefined, so 1 is as good as anything.
+	--   * SERIN and KBCODE hold an undefined power-up byte that is never reloaded, because BCLK
+	--     and KR1 float. Any constant is faithful; $FF is chosen. (MAME uses KBCODE = $09, its
+	--     800 "no key" placeholder; that is not hardware data either.)
+	--
+	-- What reads them: only a serial download routine found in the ssprint, csprint, 720 and
+	-- apb sound ROMs (not paperboy). It polls IRQST bits 4/5 and then reads SERIN. No direct
+	-- JSR or JMP reaches its entry (720: $EE32), and on silicon it would wait forever for a
+	-- serial byte, so normal play never runs it. With $F7 it would wait here just as it does
+	-- on the board.
+	kbcode <= x"FF";
+	serin  <= x"FF";
+	irqst  <= x"F7";
+	skstat <= x"FF";
+
 	p_rdata : process(oe, ADDR, pot_val, pin_reg_gated, kbcode, random, serin, irqst, skstat)
 	begin
 		DOUT <= x"00";

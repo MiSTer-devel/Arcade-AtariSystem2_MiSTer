@@ -165,22 +165,27 @@ wire [11:0] ary = (ar == 2'd0) ? (ar_rotated ? 12'd4 : 12'd3) : 12'd0;
 	"h4P1O[90:88],Game Difficulty,Medium-Easy,Very Hard,Hard,Hardest,Medium-Hard,Easy,Very Easy,Easiest;", \
 	"h4P1O[92:91],Credits Required,2 Start/1 Cont,1 Start/1 Cont,3 Start/2 Cont,3 Start/1 Cont;",
 
-// Steering feel for the four LETA games (from a hardware report that the D-pad
+// Steering feel for the LETA wheel games (from a hardware report that the D-pad
 // steered nothing but Paperboy: once it steers, ONE fixed rate is not enough -- a D-pad pins
 // the axis at full scale, so the rate below IS the turn rate).
 //
-// H0, not h5. Capital H means "hide while mask bit 0 is SET", and bit 0 is Paperboy -- so
-// this shows on exactly the four LETA games with no new menumask bit. Paperboy is excluded
-// because its handlebar is a position ADC: there is no rate to scale and no deadzone to widen,
-// so the option would be visible and inert, which is worse than absent.
+// h5 = the three WHEEL games (ssprint, csprint, apb), a menumask bit of its own. It was
+// H0 ("every game but Paperboy") until 720's stick became an ANGLE
+// (sys2_stick_angle): from then on sensitivity does nothing on 720, and the deadzone is
+// shadowed by 720's fixed +/-32 centre window (MAME's) at every setting but Largest. Paperboy
+// was already excluded for the same reason -- its handlebar is a position ADC, with no rate to
+// scale and no deadzone to widen. An option that is visible and inert is worse than absent.
+// 720 keeps MAME's fixed window rather than taking this deadzone: a springing stick passes
+// through small, noisy-angle deflections on its way back to centre, and a window much under 32
+// would let the skater flick to a random facing on release.
 //
 // One macro used by both CONF_STRs, like the DIP and CRT groups -- Aspect ratio and Orientation
 // are copy-pasted into both and are exactly the drift this avoids.
 // Four choices in each 2-bit field, so check_conf_str.py's 2**width rule is met outright and
 // neither needs a SHORT_LISTS exemption. Index 0 is the shipped behaviour in both.
 `define PB_STEER_MENU \
-	"H0O[99:98],Steering sensitivity,Normal,High,Low,Lowest;", \
-	"H0O[101:100],Steering deadzone,Normal,Small,Large,Largest;",
+	"h5O[99:98],Steering sensitivity,Normal,High,Low,Lowest;", \
+	"h5O[101:100],Steering deadzone,Normal,Small,Large,Largest;",
 
 `define PB_CRT_ALIGN_MENU \
 	"-;", \
@@ -600,7 +605,11 @@ wire        descriptor_ok, descriptor_bad;
 
 // OSD menu mask (declared up by hps_io): one bit per game, so each CONF_STR `h<n>` DIP group
 // is shown only for its own game. An unknown id shows nothing rather than the wrong labels.
-assign menumask = { 11'd0,
+// Bit 5 is not a game but a CLASS: the three steering-wheel games, for the steering-feel options
+// (PB_STEER_MENU), which apply to them and to nothing else.
+assign menumask = { 10'd0,
+                    (game_id == SYS2_GAME_SSPRINT) || (game_id == SYS2_GAME_CSPRINT) ||
+                    (game_id == SYS2_GAME_APB),
                     (game_id == SYS2_GAME_APB),
                     (game_id == SYS2_GAME_CSPRINT),
                     (game_id == SYS2_GAME_SSPRINT),
@@ -1755,11 +1764,10 @@ wire  [7:0] snd_eeprom_dump_data;  // live EEPROM byte at ioctl_addr, for the NV
 // Both discs are on ONE physical shaft, so the centre channel is DERIVED from the same
 // spinner rather than given its own input: 2 teeth against the rotate disc's 72, both
 // read at 2x, is 4 centre counts per revolution against 144 -- exactly 1:36. See
-// sys2_center_disc. What is OPEN is the DISTRIBUTION of those
-// four counts, NOT a phase offset: MAME emits all four within +/-3 of the top, we emit one
-// every 36. Same rate, different waveform. The full reasoning and the cheap hardware test
-// (720's Control Test: how many angles produce ZEROED?) are in sys2_center_disc's header --
-// read it before changing anything here.
+// sys2_center_disc. That module is a POSITION
+// model: all four centre counts fall at the top (edges at positions 142, 143, 2 and 3 -- MAME's
+// Fake Spinner pair, centred on 0), and it owns the shaft position 720's stick-angle mode steers
+// against.
 //
 // Unused channels stay idle-high: the schematic pulls all eight inputs up through R67.
 // ---------------------------------------------------------------------------
@@ -1838,7 +1846,7 @@ sys2_analog_axis u_axis_steer2 (
 	.value        (steer_x2)
 );
 
-// OSD steering feel (PB_STEER_MENU; the four LETA games only). The menu-to-value table lives
+// OSD steering feel (PB_STEER_MENU; the three wheel games only -- 720's stick is an angle). The menu-to-value table lives
 // HERE rather than in sys2_analog_spin: the module stays a rate converter that knows nothing
 // about status bits, the same split as the per-game `invert` beside it.
 //
@@ -1854,7 +1862,10 @@ sys2_analog_axis u_axis_steer2 (
 // menu gets exactly what they had. Shared across all five games -- MiSTer keeps one .cfg per
 // CORE, not per MRA -- which is why the values are absolute rather than per-game trims.
 wire [1:0] steer_rate_sel = status[99:98];
-wire [1:0] steer_dz_sel   = status[101:100];
+// 720 is pinned to index 0 (deadzone 12, the stick-vs-D-pad live test): the option is HIDDEN
+// there (h5, wheel games only), and a hidden option keeps whatever an older .cfg saved, so a
+// value set before the menu change would otherwise go on applying invisibly.
+wire [1:0] steer_dz_sel   = is_720 ? 2'd0 : status[101:100];
 wire [4:0] steer_acc_bits = (steer_rate_sel == 2'd1) ? 5'd14 :
                             (steer_rate_sel == 2'd2) ? 5'd16 :
                             (steer_rate_sel == 2'd3) ? 5'd17 : 5'd15;
@@ -1883,21 +1894,56 @@ sys2_analog_spin u_aspin2 (
 	.delta(ana_d2), .delta_valid(ana_v2)
 );
 
-// 720's centre disc. Fed from the SAME rotate movement that drives the rotate channel --
-// one shaft, so they cannot drift apart. Inert on every other game: ctr_valid only pulses
-// when the divider is handed movement, and only 720 hands it any.
-// The two rotate sources are merged with the spinner winning a same-cycle tie. A tie
-// costs ONE analog count and cannot drift systematically (the analog path emits at most
-// ~548/s and spinner updates are sporadic), which is the same order as the count loss a
-// real encoder suffers at speed. Do NOT "fix" it by summing: sys2_center_disc takes one
-// delta per valid, and summing two independent streams into one pulse loses the other.
+// 720's stick angle. Before this module, the stick drove 720 through sys2_analog_spin like a
+// steering wheel -- deflection = turn RATE -- so the control span while the stick was held
+// instead of following it. 720's controller is a joystick that turns on its shaft, and the
+// skater should face where the stick POINTS. sys2_stick_angle is MAME's Fake Joystick mode
+// for 720, turned into rotate-count deltas so the real quadrature path still carries them.
+// The rate path (ana_d0) is now unused on 720, and both steering-feel options are hidden there
+// (PB_STEER_MENU, h5); its deadzone is pinned to the default, which only decides when the stick
+// takes over from the D-pad -- the angle's own centre window is MAME's fixed +/-32.
+//
+// Its Y axis is a sixth sys2_analog_axis so the D-pad reaches the angle too, with the SAME
+// live-test as u_axis_steer0: one stick, one threshold, both axes. dig_pos is m_down because
+// positive Y is DOWN on the pad (hardware); sys2_stick_angle flips it to up.
+wire [7:0] rot_y0;
+sys2_analog_axis u_axis_rot_y0 (
+	.stick_active (stick_live(joystick_l_analog_0, steer_deadzone)),
+	.axis         (joystick_l_analog_0[15:8]),
+	.dig_pos      (m_down),
+	.dig_neg      (m_up),
+	.value        (rot_y0)
+);
+
+wire        [7:0] shaft_pos;
+wire signed [8:0] ang_d;
+wire              ang_v;
+sys2_stick_angle u_angle720 (
+	.clk         (clk_t11),
+	.reset       (reset),
+	.tick        (leta_ce_phi2),
+	.enable      (is_720),
+	.ax          (steer_x0 ^ 8'h80),
+	.ay          (rot_y0   ^ 8'h80),
+	.pos         (shaft_pos),
+	.delta       (ang_d),
+	.delta_valid (ang_v)
+);
+
+// 720's centre disc, fed from the SAME rotate movement that drives the rotate channel --
+// one shaft, so they cannot drift apart. Inert on every other game: it is only handed
+// movement on 720. It also OWNS the shaft position the angle mode steers against.
+// The spinner and the stick are SUMMED into one delta: the centre disc is now a position
+// model that folds any delta up to +/-255, so nothing is lost on a same-cycle tie (the old
+// divider kept the spinner and dropped the stick's count, which in angle mode would have
+// walked the centre position away from the rotate channel's).
 logic       spin0_tog_d;
 wire        spin0_new   = (spinner_0[8] != spin0_tog_d);
 wire signed [8:0] spin0_delta = {spinner_0[7], spinner_0[7:0]};
 always_ff @(posedge clk_t11) spin0_tog_d <= spinner_0[8];
 
-wire signed [8:0] rot720_delta = spin0_new ? spin0_delta : ana_d0;
-wire              rot720_valid = (spin0_new || ana_v0) && is_720;
+wire signed [8:0] rot720_delta = (spin0_new ? spin0_delta : 9'sd0) + (ang_v ? ang_d : 9'sd0);
+wire              rot720_valid = (spin0_new || ang_v) && is_720;
 
 wire signed [8:0] ctr_delta;
 wire              ctr_valid;
@@ -1907,7 +1953,8 @@ sys2_center_disc u_center (
 	.rot_delta (rot720_delta),
 	.rot_valid (rot720_valid),
 	.ctr_delta (ctr_delta),
-	.ctr_valid (ctr_valid)
+	.ctr_valid (ctr_valid),
+	.pos       (shaft_pos)
 );
 
 wire [2:0] qx, qy;
@@ -1919,12 +1966,12 @@ wire signed [15:0] qbl0, qbl1, qbl2;
 //
 //   channel   720                    ssprint / csprint / apb
 //   0         centre disc (derived)  P1 wheel <- stick 0
-//   1         rotate <- stick 0      P2 wheel <- stick 1
+//   1         rotate <- stick 0 ANGLE  P2 wheel <- stick 1
 //   2         --                     P3 wheel <- stick 2 (ssprint only)
 wire signed [8:0] q0_delta = is_720 ? ctr_delta : ana_d0;
 wire              q0_valid = is_720 ? ctr_valid : ana_v0;
-wire signed [8:0] q1_delta = is_720 ? ana_d0    : ana_d1;
-wire              q1_valid = is_720 ? ana_v0    : ana_v1;
+wire signed [8:0] q1_delta = is_720 ? ang_d     : ana_d1;
+wire              q1_valid = is_720 ? ang_v     : ana_v1;
 
 sys2_quad_gen u_quad0 (
 	.clk(clk_t11), .reset(reset), .ce_step(leta_ce_phi2),
@@ -1943,7 +1990,7 @@ sys2_quad_gen u_quad2 (
 );
 
 // Channel 3 is unused on every game. Channel 0 is live on all of them now: the wheel
-// games drive it from spinner_0 and 720 from the centre-disc divider.
+// games drive it from spinner_0 and 720 from the centre-disc position model.
 wire [3:0] leta_x = {1'b1, qx[2], qx[1], leta_present ? qx[0] : 1'b1};
 wire [3:0] leta_y = {1'b1, qy[2], qy[1], leta_present ? qy[0] : 1'b1};
 

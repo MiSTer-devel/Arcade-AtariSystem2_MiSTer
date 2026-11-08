@@ -99,16 +99,18 @@ pad:
 
 - **Paperboy** steers on ADC channel 0 (handlebars) with speed on channel 1. Both
   the left analog stick and the D-pad drive it.
-- **720 Degrees** reads a joystick plus a rotating shaft carrying two optical
-  discs: a 72-tooth *rotate* disc and a 2-tooth *centre* disc that tells the game
-  where "top" is. A player has one spinner, not a shaft, so the centre channel is
-  derived from the same motion at the geometric 1:36 ratio.
+- **720 Degrees** reads a joystick that turns on a shaft carrying two optical
+  discs: a 72-tooth *rotate* disc and a centre disc whose notches tell the game
+  where "top" is. On an analog stick or the D-pad, the joystick points where you
+  point: push the stick in a direction and the skater turns to face it, as in
+  MAME's joystick mode. A spinner turns the shaft directly. Either way the centre
+  channel is derived from the same motion, with its notches at the top.
 - **Super Sprint** (three players) and **Championship Sprint** (two) read a
   steering wheel per player through Atari's LETA quadrature encoder, plus a
   pedal. The wheels come from the players' spinners or analog sticks.
 - **APB** reads a steering wheel and a pedal.
 
-The **D-pad steers the four wheel games too**, not just the analog stick — it
+The **D-pad steers the three wheel games too**, not just the analog stick — it
 slams the axis to full scale, which is why the two options below matter most
 there.
 
@@ -117,15 +119,15 @@ thumbstick cannot map onto them one-to-one. Deflection is converted to a turn
 rate instead: push further, turn faster, hold to keep turning. **Steering
 sensitivity** sets that rate and **Steering deadzone** sets how much slop near
 centre is ignored — useful on a worn stick that no longer returns to zero. Both
-appear only on the four wheel games; Paperboy's handlebar is a position axis, so
-neither applies.
+appear only on the three wheel games: Paperboy's handlebar is a position axis,
+and 720's stick sets an angle rather than a rate, so neither applies there.
 
-| Steering sensitivity | Counts/sec at full deflection | 720 revolutions/sec |
-|--------|--------|--------|
-| Normal (default) | ~548 | 3.8 |
-| High | ~1097 | 7.6 |
-| Low | ~274 | 1.9 |
-| Lowest | ~137 | 0.95 |
+| Steering sensitivity | Counts/sec at full deflection |
+|--------|--------|
+| Normal (default) | ~548 |
+| High | ~1097 |
+| Low | ~274 |
+| Lowest | ~137 |
 
 Each game keeps its own settings. MiSTer stores them in a separate file per game,
 so set the sensitivity in each game you play and choose **Save settings** in the
@@ -216,18 +218,15 @@ link twice per frame, which no single-snapshot comparison can represent. The cor
 was developed simulation-first, with AI assistance, under human review and
 hardware validation on real MiSTer hardware.
 
-Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 17,878 / 41,910 ALMs
-(43 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,106
+Resource use of the shipped build (Cyclone V 5CSEBA6U23I7): 18,073 / 41,910 ALMs
+(43 %), 465 / 553 RAM blocks (84 %), 84 / 112 DSP blocks, 3 / 6 PLLs, 24,219
 registers. Timing closes with **TNS 0.000 on all 36 clock domains**: worst setup
-+0.548 ns and worst hold +0.160 ns, both on PLL output counters.
++0.445 ns and worst hold +0.245 ns, both on PLL output counters.
 
 ### Known issues
 
 - **Paperboy's D-pad and analog stick disagree on X.** Players using the analog
   stick are unaffected.
-- **720's centre-disc encoding** emits the right number of counts at the right
-  rate but distributes them evenly around the rotation, where the real optical
-  disc may cluster them near the top. The game plays correctly either way.
 
 ---
 

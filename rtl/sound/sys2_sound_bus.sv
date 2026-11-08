@@ -126,8 +126,12 @@ module sys2_sound_bus #(
 
 	// Physical DIP option switches (SP-275 sheet 9B), read by the 6502 through each POKEY's pot
 	// lines (ALLPOT). dip_coin -> POKEY1 (coin options, location 6/7A), dip_game -> POKEY2 (game
-	// options, 5/6A). Bit order matches the schematic + POKEY P-pins: bit7=switch1 .. bit0=switch8,
-	// active-low (1 = switch OFF / line pulled to +5V, 0 = switch ON / grounded).
+	// options, 5/6A). Bit order matches the schematic + POKEY P-pins: bit7=switch1 .. bit0=switch8.
+	// These carry the ALLPOT bit the 6502 reads, not the pin voltage: 1 = switch on. On the
+	// board an ON switch grounds its P-line, the pot never finishes charging, and ALLPOT reads 1
+	// for it during the scan. The top level's encoding follows that sense (switches 1-3 all on
+	// = 3'b111 = Free Play). Our POKEY returns PIN as ALLPOT during the scan and $00 after it,
+	// which matches silicon.
 	input  logic [7:0]  dip_coin,
 	input  logic [7:0]  dip_game,
 

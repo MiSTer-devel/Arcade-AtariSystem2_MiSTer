@@ -36,9 +36,15 @@
 //      it "positional control bits are active low" and `ioport.cpp` applies a plain
 //      `value = ~value`. NOT a reflection within MINMAX. So released = 0xff and floored =
 //      0xc0, which is the reading PEDAL_RELEASED/PEDAL_FLOORED already carried.
-//   2. The 0x00-0x3f span is mechanical travel, not MAME clamping and not electronics.
-//      SP-290 sheet 8B shows the pedal pot going into the ADC0809 through a 100 R series
-//      resistor with NO divider, i.e. the converter sees the full rail.
+//   2. The 0x00-0x3f span is mechanical travel, not MAME clamping and not a divider.
+//      SP-290 sheet 8B puts every ADC input, after its 100 R series resistor (R13-R20),
+//      on a node with RN2 10k to +5 V, RN1 10k to GND and 0.1 uF to GND. Against the 5k
+//      pedal pot (Atari 19-9026, BK to GND, R to +5 V) that bias pulls readings toward
+//      0x80 by up to 11.8 codes (at 18 % / 82 % of the track; about 8 codes in the pedal's
+//      working range), an unplugged input reads 0x80, and the ends reach only about 0x02
+//      and 0xFD. So the span is travel, but MAME's 0xFF rest is a value a real board
+//      cannot produce. That is not a play problem (see the residual below); 0xFF stays
+//      because it is MAME's figure.
 //
 // Confirmed on hardware via APB's Pedal Test, which prints lo/hi/range/raw/
 // normalized rather than the Sprints' bare lo/value/hi: raw moves 00 -> 3F and normalized
@@ -58,6 +64,10 @@
 // the self-test grades range SIZE (ours 0x3F exceeds the cabinet's ~0x2E), so this is not
 // known to affect play and is not a reason to move the constants. If a Sprint's own Pedal
 // Test is ever run on the board, that is the comparison to make.
+// With the 10k/10k load above, those cabinet readings put the wiper at about 0.34-0.38 of
+// the track at rest and 0.61-0.67 pressed, moving toward the +5 V end (derived): the real
+// pedal rises, mid-scale, over about 28 % of the track. Which physical lug carries the
+// ground wire is not documented.
 //
 // The two endpoints stay named constants carrying their derivation rather than magic
 // numbers. The channel map above comes straight from the per-game PORT_MODIFY list and is

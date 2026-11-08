@@ -76,6 +76,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_leta.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_quad_gen.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_analog_spin.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_center_disc.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/sys2_stick_angle.sv
 
 # Analog output network (SP-275 sheets 9A/9B): a single-pole RC primitive, the
 # per-chip filter chain built from it, the summing/output stage, and the whole
